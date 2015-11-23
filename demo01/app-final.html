@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="app">
+<head>
+    <meta charset="utf-8">
+    <title>Firebase Authentication</title>
+    <link rel="stylesheet" href="http://bootswatch.com/paper/bootstrap.min.css">
+</head>
+<body ng-controller="AuthCtrl">
+
+<nav class="navbar navbar-inverse">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">SP DEV FEST 2015</a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="#" ng-click="login()" ng-if="!authData">Login</a></li>
+                <li><a href="#" ng-if="authData">{{ authData.facebook.displayName }}</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="col-md-3 text-center" ng-if="authData">
+        <div class="list-group">
+            <a href="#" class="list-group-item">
+                <img ng-src="{{ authData.facebook.profileImageURL }}" alt="{{ authData.facebook.displayName }}"><br>
+                <h4 class="list-group-item-heading">{{ authData.facebook.displayName }}</h4>
+
+                <p class="list-group-item-text">{{ authData.facebook.email }}</p>
+            </a>
+        </div>
+
+        <input ng-model="comment" class="form-control" type="text" placeholder="Insira seu comentário" />
+        <br>
+        <button class="btn btn-success btn-lg btn-block" ng-click="doComment()">COMENTAR</button>
+    </div>
+    <div class="col-md-9">
+        <iframe width="100%" height="515" src="https://www.youtube.com/embed/yP8-zTkDQfk" frameborder="0" allowfullscreen></iframe>
+        <hr>
+        <h3>Comentários</h3>
+
+        <div class="list-group">
+            <a href="#" class="list-group-item" ng-repeat="item in comments">
+                <p>{{ item.comment }}</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.firebase.com/js/client/2.2.2/firebase.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+
+<script>
+    angular.module('app', []);
+
+    angular.module('app').controller('AuthCtrl', function ($scope, $http) {
+
+        $scope.authData = null;
+        $scope.comment = 'Comente aqui';
+        $scope.comments = [];
+
+        $scope.login = doFacebookLogin;
+        $scope.doComment = doComment;
+
+        getComments();
+
+        function getComments() {
+            $http.get('https://spdevfest.firebaseio.com/comentarios.json')
+                .success(function(data){
+                    console.log(data);
+                    $scope.comments = angular.fromJson(data);
+                })
+                .catch(function(error){
+                    console.log(error);
+                });
+        }
+
+        function doFacebookLogin() {
+            var ref = new Firebase("https://spdevfest.firebaseio.com/");
+
+            ref.authWithOAuthPopup("facebook", function (error, authData) {
+                if (error) {
+                    console.log("Falha no login!!", error);
+                } else {
+                    console.log(authData);
+                    $scope.authData = authData;
+                    $scope.token = authData.token;
+                    $scope.$apply();
+                }
+            }, {
+                scope: "email"
+            });
+        }
+
+        function doComment() {
+            var data = { userid: $scope.authData.uid, comment: $scope.comment };
+            console.log(data);
+            $http.post('https://spdevfest.firebaseio.com/comentarios.json',data)
+                .success(function(res){
+                    $scope.comments.push({data});
+                })
+                .catch(function(error){
+                    console.log(error);
+                });
+        }
+    });
+</script>
+
+</body>
+</html>

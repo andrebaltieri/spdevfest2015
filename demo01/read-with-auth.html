@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="app">
+<head>
+    <meta charset="utf-8">
+    <title>Firebase Authentication</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+</head>
+<body ng-controller="AuthCtrl">
+
+<h1 class="text-center">Autenticação no Firebase</h1>
+
+
+<div class="col-md-4">
+    <p class="text-center">
+        <button class="btn btn-lg btn-success" ng-click="login()">FACEBOOK</button>
+    </p>
+
+    <ul>
+        <li><strong>Nome:</strong> {{ user.name }}</li>
+        <li><strong>E-mail:</strong> {{ user.email }}</li>
+    </ul>
+
+    <p class="text-center">
+        <strong>{{ token }}</strong>
+        <img ng-src="{{ user.image }}" alt="{{ user.name }}">
+    </p>
+
+    <br><br><br><br>
+
+    <p class="text-center">
+        <button class="btn btn-lg btn-success" ng-click="getParticipants()">OBTER PARTICIPANTES</button>
+        <ul>
+            <li ng-repeat="item in participants"></li>
+        </ul>
+    </p>
+</div>
+
+<script src="https://cdn.firebase.com/js/client/2.2.2/firebase.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.0-beta.2/angular.min.js"></script>
+<script src="https://cdn.firebase.com/libs/angularfire/1.0.0/angularfire.min.js"></script>
+
+<script>
+    angular.module('app', ['firebase']);
+
+    angular.module('app').controller('AuthCtrl', function ($scope, $firebaseArray) {
+        var ref = new Firebase("https://spdevfest.firebaseio.com/");
+
+        $scope.login = doFacebookLogin;
+        $scope.logout = logout;
+        $scope.participants = [];
+        $scope.getParticipants = getParticipants;
+        $scope.token = '';
+
+        function doFacebookLogin() {
+            ref.authWithOAuthPopup("facebook", function (error, authData) {
+                if (error) {
+                    console.log("Falha no login!!", error);
+                } else {
+                    console.log(authData);
+                    $scope.user = {
+                        name: authData.facebook.displayName,
+                        email: authData.facebook.email,
+                        image: authData.facebook.profileImageURL
+                    };
+                    $scope.token = authData.token;
+                    $scope.$apply();
+                }
+            }, {
+                scope: "email"
+            });
+        }
+
+        function logout() {
+            ref.unauth();
+            $scope.user = null;
+            localStorage.removeItem("firebase:session::5517");
+        }
+
+        function getParticipants() {
+            var firebase = new Firebase('https://spdevfest.firebaseio.com/participantes?auth=' + $scope.token);
+            $scope.participants = $firebaseArray(ref);
+        }
+    });
+</script>
+
+</body>
+</html>
